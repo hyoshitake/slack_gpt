@@ -71,21 +71,20 @@ app.event('app_mention', async ({ event, client, say }) => {
     }
 
     /* スレッドの内容をGTPに送信 */
+    const botUserId = 'U050CJ20Y6L'
     const threadMessages = replies.messages.map((message) => {
       return {
-        // role: message.user === botUserId ? 'assistant' : 'user',
-        role: 'user',
-        // content: (message.text || '').replace(`<@${botUserId}>`, ''),
-        content: (message.text || ''),
+        role: message.user === botUserId ? 'assistant' : 'user',
+        content: (message.text || '').replace(`<@${botUserId}> `, ''),
       };
     });
-    console.log('===replies===========================')
+    console.log('===threadMessages===========================')
     console.log(threadMessages)
-    console.log('===replies===========================')
+    console.log('===threadMessages===========================')
     const gptAnswerText = await postChat(threadMessages);
-    console.log('===replies===========================')
+    console.log('===AnswerText===========================')
     console.log(gptAnswerText)
-    console.log('===replies===========================')
+    console.log('===AnswerText===========================')
 
     /* スレッドに返信 */
     await say({
