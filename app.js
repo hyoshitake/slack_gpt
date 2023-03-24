@@ -71,7 +71,7 @@ app.event('app_mention', async ({ event, client, say }) => {
     }
 
     /* スレッドの内容をGTPに送信 */
-    const botUserId = 'U050CJ20Y6L'
+    const botUserId = process.env.BOT_USER_ID
     const threadMessages = replies.messages.map((message) => {
       return {
         role: message.user === botUserId ? 'assistant' : 'user',
