@@ -9,20 +9,28 @@ type OriginalMessageEvent = MessageEvent & {
   user: string;
 };
 
-// OpenAIへのリクエストのインターフェース
+// OpenAIへのリクエストのインターフェース もっと色々設定できるが今回必要なもののみ定義
 interface ChatCompletionRequestBody {
   model: string;
-  messages: string[];
+  messages: openAiMessage[];
 }
 
-// OpenAIのレスポンスのインターフェース
+// OpenAIへのリクエストに使用されるmessageの詳細
+interface openAiMessage {
+  role: string;
+  content: string;
+}
+
+// OpenAIのレスポンスのインターフェース 返却されるレスポンス詳細をもっと色々設定できるが今回必要なもののみ定義
 interface ChatCompletionResponse {
   choices: {
-    text: string;
+    message: {
+      content: string;
+    }
   }[];
 }
 
-const postChat = async (messages: string[]): Promise<string> => {
+const postChat = async (messages: openAiMessage[]): Promise<string> => {
 
   const openAiApiKey = process.env.OPEN_AI_API_KEY;
   if (!openAiApiKey) {
@@ -46,7 +54,7 @@ const postChat = async (messages: string[]): Promise<string> => {
 
   if (!response.data) return 'No response from OpenAI API';
 
-  return response.data.choices[0].text;
+  return response.data.choices[0].message.content;
 };
 
 const app = new App({
@@ -90,10 +98,10 @@ app.event('app_mention', async ({ event, client, say }) => {
     /* スレッドの内容をGTPに送信 */
     const botUserId = process.env.BOT_USER_ID
     const threadMessages = replies.messages.map((message) => {
-      return JSON.stringify({
+      return {
         role: message.user === botUserId ? 'assistant' : 'user',
         content: (message.text || '').replace(`<@${botUserId}> `, ''),
-      });
+      };
     });
     console.log('===threadMessages===========================')
     console.log(threadMessages)
