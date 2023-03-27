@@ -30,9 +30,13 @@ interface ChatCompletionResponse {
   }[];
 }
 
+const slackBotToken: string | undefined = process.env.SLACK_BOT_TOKEN;
+const slackSigningSecret: string | undefined = process.env.SLACK_SIGNING_SECRET;
+const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN
+
 const postChat = async (messages: openAiMessage[]): Promise<string> => {
 
-  const openAiApiKey = process.env.OPEN_AI_API_KEY;
+  const openAiApiKey: string | undefined = process.env.OPEN_AI_API_KEY;
   if (!openAiApiKey) {
     throw new Error('OpenAI API key not found');
   }
@@ -58,10 +62,10 @@ const postChat = async (messages: openAiMessage[]): Promise<string> => {
 };
 
 const app = new App({
-  token: process.env.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  token: slackBotToken,
+  signingSecret: slackSigningSecret,
   socketMode: true,
-  appToken: process.env.SLACK_APP_TOKEN,
+  appToken: slackAppToken,
   // ソケットモードではポートをリッスンしませんが、アプリを OAuth フローに対応させる場合、
   // 何らかのポートをリッスンする必要があります
   port: 3000
@@ -69,13 +73,13 @@ const app = new App({
 
 // "hello" を含むメッセージをリッスンします
 app.message('hello', async ({ message, say }) => {
-  const originalMessage = message as OriginalMessageEvent;
+  const originalMessage: OriginalMessageEvent = message as OriginalMessageEvent;
   // イベントがトリガーされたチャンネルに say() でメッセージを送信します
   await say(`Hey there <@${originalMessage.user}>!`);
 });
 
 app.event('app_mention', async ({ event, client, say }) => {
-  const channelId = event.channel;
+  const channelId: string = event.channel;
   // if (channelId !== askBotChannelId) return;
   try {
     /* 応答があったスレッドの内容を取得 */
@@ -96,7 +100,7 @@ app.event('app_mention', async ({ event, client, say }) => {
     }
 
     /* スレッドの内容をGTPに送信 */
-    const botUserId = process.env.BOT_USER_ID
+    const botUserId: string | undefined = process.env.BOT_USER_ID
     const threadMessages = replies.messages.map((message) => {
       return {
         role: message.user === botUserId ? 'assistant' : 'user',
