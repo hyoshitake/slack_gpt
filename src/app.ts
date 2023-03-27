@@ -1,36 +1,52 @@
-// const { App } = require('@slack/bolt');
-// const { postChat } = require('@/chat_gpt.ts');
-
-// import { App } from '@slack/bolt';
-// const postChat = require("./chat_gpt");
-// import postChat from "./chat_gpt";
-// import { postChat } from "./chatGpt";
-
-import pkg from '@slack/bolt';
-const { App } = pkg;
+import { App, MessageEvent } from '@slack/bolt'
 
 import axios from 'axios';
-import dotenv from 'dotenv';
-dotenv.config();
+import { config } from 'dotenv';
+config();
 
-const postChat = async (messages) => {
-  const response = await axios.post(
-    'https://api.openai.com/v1/chat/completions',
-    {
-      model: 'gpt-3.5-turbo',
-      messages,
-    }, // body
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-    },
-  );
+// userが型定義されていないと怒られるため、string型のuserを持ったOriginalMessageEventをMessageEventを拡張して再定義する
+type OriginalMessageEvent = MessageEvent & {
+  user: string;
+};
+
+// OpenAIへのリクエストのインターフェース
+interface ChatCompletionRequestBody {
+  model: string;
+  messages: string[];
+}
+
+// OpenAIのレスポンスのインターフェース
+interface ChatCompletionResponse {
+  choices: {
+    text: string;
+  }[];
+}
+
+const postChat = async (messages: string[]): Promise<string> => {
+
+  const openAiApiKey = process.env.OPEN_AI_API_KEY;
+  if (!openAiApiKey) {
+    throw new Error('OpenAI API key not found');
+  }
+
+  const endpoint = 'https://api.openai.com/v1/chat/completions';
+  const requestBody: ChatCompletionRequestBody = {
+    model: 'gpt-3.5-turbo',
+    messages: messages,
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${openAiApiKey}`
+  };
+
+  const response = await axios.post<ChatCompletionResponse>(endpoint, requestBody, {
+    headers,
+  });
 
   if (!response.data) return 'No response from OpenAI API';
 
-  return response.data.choices[0].message.content;
+  return response.data.choices[0].text;
 };
 
 const app = new App({
@@ -45,8 +61,9 @@ const app = new App({
 
 // "hello" を含むメッセージをリッスンします
 app.message('hello', async ({ message, say }) => {
+  const originalMessage = message as OriginalMessageEvent;
   // イベントがトリガーされたチャンネルに say() でメッセージを送信します
-  await say(`Hey there <@${message.user}>!`);
+  await say(`Hey there <@${originalMessage.user}>!`);
 });
 
 app.event('app_mention', async ({ event, client, say }) => {
@@ -73,10 +90,10 @@ app.event('app_mention', async ({ event, client, say }) => {
     /* スレッドの内容をGTPに送信 */
     const botUserId = process.env.BOT_USER_ID
     const threadMessages = replies.messages.map((message) => {
-      return {
+      return JSON.stringify({
         role: message.user === botUserId ? 'assistant' : 'user',
         content: (message.text || '').replace(`<@${botUserId}> `, ''),
-      };
+      });
     });
     console.log('===threadMessages===========================')
     console.log(threadMessages)

@@ -1,5 +1,4 @@
 {
-  "type": "module",
   "name": "slack_gpt",
   "version": "1.0.0",
   "description": "slack_gpt",
@@ -18,9 +17,11 @@
   },
   "homepage": "https://github.com/hyoshitake/slack_gpt#readme",
   "dependencies": {
-    "@slack/bolt": "^3.12.2",
     "axios": "^1.3.4",
     "dotenv": "^16.0.3",
     "openai": "^3.2.1"
+  },
+  "devDependencies": {
+    "@slack/bolt": "^3.12.2"
   }
 }
