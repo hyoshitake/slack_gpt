@@ -82,8 +82,8 @@ if (environment === "development") {
     console.log("hello world")
     res.send('Hello World!');
   });
+  // Renderからのヘルスチェック用
   receiver.app.get('/healthcheck', (_req, res) => {
-    console.log("health check")
     res.send('OK!');
   });
   // Slack appからの疎通確認用
