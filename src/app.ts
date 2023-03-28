@@ -94,6 +94,7 @@ if (environment === "development") {
     token: slackBotToken,
     appToken: slackAppToken,
     receiver,
+    port: 3000,
   });
 }
 
