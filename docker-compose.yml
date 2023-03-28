@@ -20,6 +20,7 @@ services:
       OPEN_AI_API_KEY: $OPEN_AI_API_KEY
       BOT_USER_ID: $BOT_USER_ID
       SLACK_APP_ENV: $SLACK_APP_ENV
+      PORT: 3000
     tty: true
 
 volumes:

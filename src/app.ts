@@ -31,6 +31,7 @@ interface ChatCompletionResponse {
 }
 
 const environment: string | undefined = process.env.SLACK_APP_ENV;
+const port : string | undefined = process.env.PORT
 const slackBotToken: string | undefined = process.env.SLACK_BOT_TOKEN;
 const slackSigningSecret: string | undefined = process.env.SLACK_SIGNING_SECRET;
 const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN
@@ -81,6 +82,10 @@ if (environment === "development") {
     console.log("hello world")
     res.send('Hello World!');
   });
+  receiver.app.get('/healthcheck', (_req, res) => {
+    console.log("health check")
+    res.send('OK!');
+  });
   // Slack appからの疎通確認用
   receiver.app.post('/slack/events', async (req, res) => {
     console.log(req)
@@ -93,8 +98,7 @@ if (environment === "development") {
   app = new App({
     token: slackBotToken,
     appToken: slackAppToken,
-    receiver,
-    port: 3000,
+    receiver
   });
 }
 
@@ -153,8 +157,7 @@ app.event('app_mention', async ({ event, client, say }) => {
 });
 
 (async () => {
-  // アプリを起動します
-  await app.start();
+  await app.start(port || 3000);
 
   console.log('⚡️ Bolt app is running!');
 })();
