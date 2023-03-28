@@ -1,0 +1,27 @@
+version: '3'
+services:
+  app:
+    build: .
+    container_name: slack_gpt
+    working_dir: /var/app
+    command: npm run watch
+    volumes:
+      - slack_gpt-volume:/var/app:delegated
+      # - /Users/moriryotaro/projects/GitHub/slack_gpt:/var/app:delegated
+    ports:
+      - 48080:3000
+    expose:
+      - 3000
+    environment:
+      TZ: $TZ
+      SLACK_SIGNING_SECRET: $SLACK_SIGNING_SECRET
+      SLACK_BOT_TOKEN: $SLACK_BOT_TOKEN
+      SLACK_APP_TOKEN: $SLACK_APP_TOKEN
+      OPEN_AI_API_KEY: $OPEN_AI_API_KEY
+      BOT_USER_ID: $BOT_USER_ID
+      SLACK_APP_ENV: $SLACK_APP_ENV
+      PORT: 3000
+    tty: true
+
+volumes:
+  slack_gpt-volume:

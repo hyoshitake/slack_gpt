@@ -1,6 +1,6 @@
-import { App, MessageEvent } from '@slack/bolt'
-
+import { App, MessageEvent, ExpressReceiver } from '@slack/bolt'
 import axios from 'axios';
+import express from 'express';
 import { config } from 'dotenv';
 config();
 
@@ -30,6 +30,8 @@ interface ChatCompletionResponse {
   }[];
 }
 
+const environment: string | undefined = process.env.SLACK_APP_ENV;
+const port : string | undefined = process.env.PORT
 const slackBotToken: string | undefined = process.env.SLACK_BOT_TOKEN;
 const slackSigningSecret: string | undefined = process.env.SLACK_SIGNING_SECRET;
 const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN
@@ -62,15 +64,43 @@ const postChat = async (messages: openAiMessage[]): Promise<string> => {
   return response.data.choices[0].message.content;
 };
 
-const app = new App({
-  token: slackBotToken,
-  signingSecret: slackSigningSecret,
-  socketMode: true,
-  appToken: slackAppToken,
-  // ソケットモードではポートをリッスンしませんが、アプリを OAuth フローに対応させる場合、
-  // 何らかのポートをリッスンする必要があります
-  port: 3000
-});
+let app;
+if (environment === "development") {
+  // 開発環境の場合は socketMode で起動する
+  app = new App({
+    token: slackBotToken,
+    signingSecret: slackSigningSecret,
+    socketMode: true,
+    appToken: slackAppToken,
+    port: 3000,
+  });
+} else {
+  // 本番環境は httpMode で起動する
+  const receiver = new ExpressReceiver({ signingSecret: slackSigningSecret || "" });
+  receiver.app.use(express.json());
+  receiver.app.get('/', (_req, res) => {
+    console.log("hello world")
+    res.send('Hello World!');
+  });
+  // Renderからのヘルスチェック用
+  receiver.app.get('/healthcheck', (_req, res) => {
+    res.send('OK!');
+  });
+  // Slack appからの疎通確認用
+  receiver.app.post('/slack/events', async (req, res) => {
+    console.log(req)
+    if (req.body.type === 'url_verification') {
+      res.status(200).send(req.body.challenge);
+    } else {
+      res.status(404).end();
+    }
+  });
+  app = new App({
+    token: slackBotToken,
+    appToken: slackAppToken,
+    receiver
+  });
+}
 
 // "hello" を含むメッセージをリッスンします
 app.message('hello', async ({ message, say }) => {
@@ -127,8 +157,7 @@ app.event('app_mention', async ({ event, client, say }) => {
 });
 
 (async () => {
-  // アプリを起動します
-  await app.start();
+  await app.start(port || 3000);
 
   console.log('⚡️ Bolt app is running!');
 })();
