@@ -1,0 +1,27 @@
+version: '3'
+services:
+  app:
+    image: node
+    container_name: slack_gpt
+    working_dir: /var/app
+    command: bash -c "npm install && npm install -g typescript && tsc --project . && node ./dist/app.js"
+    # command: bash
+    volumes:
+      - slack_gpt-volume:/var/app:delegated
+      # - /Users/moriryotaro/projects/GitHub/slack_gpt:/var/app:delegated
+    ports:
+      - 48080:3000
+    expose:
+      - 3000
+    environment:
+      TZ: $TZ
+      SLACK_SIGNING_SECRET: $SLACK_SIGNING_SECRET
+      SLACK_BOT_TOKEN: $SLACK_BOT_TOKEN
+      SLACK_APP_TOKEN: $SLACK_APP_TOKEN
+      OPEN_AI_API_KEY: $OPEN_AI_API_KEY
+      BOT_USER_ID: $BOT_USER_ID
+      ENV: $ENV
+    tty: true
+
+volumes:
+  slack_gpt-volume:

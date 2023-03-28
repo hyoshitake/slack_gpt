@@ -30,6 +30,7 @@ interface ChatCompletionResponse {
   }[];
 }
 
+const environment: string | undefined = process.env.ENV;
 const slackBotToken: string | undefined = process.env.SLACK_BOT_TOKEN;
 const slackSigningSecret: string | undefined = process.env.SLACK_SIGNING_SECRET;
 const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN
@@ -62,15 +63,20 @@ const postChat = async (messages: openAiMessage[]): Promise<string> => {
   return response.data.choices[0].message.content;
 };
 
-const app = new App({
+const appOptions = {
   token: slackBotToken,
   signingSecret: slackSigningSecret,
-  socketMode: true,
+  socketMode: false,
   appToken: slackAppToken,
-  // ソケットモードではポートをリッスンしませんが、アプリを OAuth フローに対応させる場合、
-  // 何らかのポートをリッスンする必要があります
   port: 3000
-});
+}
+
+if (environment === "development") {
+  // 開発環境の場合は socketMode で起動する
+  appOptions["socketMode"] = true;
+}
+
+const app = new App(appOptions);
 
 // "hello" を含むメッセージをリッスンします
 app.message('hello', async ({ message, say }) => {
