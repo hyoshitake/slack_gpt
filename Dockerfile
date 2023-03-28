@@ -15,3 +15,6 @@ COPY . .
 
 # TypeSciprtをビルドしてjsファイルを作成する
 RUN tsc --project .
+
+# tsc-watchで監視しながらnpm startを実行する
+CMD ["npm", "run", "watch"]
