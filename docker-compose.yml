@@ -20,7 +20,7 @@ services:
       SLACK_APP_TOKEN: $SLACK_APP_TOKEN
       OPEN_AI_API_KEY: $OPEN_AI_API_KEY
       BOT_USER_ID: $BOT_USER_ID
-      ENV: $ENV
+      NODE_ENV: $NODE_ENV
     tty: true
 
 volumes:

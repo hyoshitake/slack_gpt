@@ -1,6 +1,6 @@
-import { App, MessageEvent } from '@slack/bolt'
-
+import { App, MessageEvent, ExpressReceiver } from '@slack/bolt'
 import axios from 'axios';
+import express from 'express';
 import { config } from 'dotenv';
 config();
 
@@ -30,7 +30,7 @@ interface ChatCompletionResponse {
   }[];
 }
 
-const environment: string | undefined = process.env.ENV;
+const environment: string | undefined = process.env.NODE_ENV;
 const slackBotToken: string | undefined = process.env.SLACK_BOT_TOKEN;
 const slackSigningSecret: string | undefined = process.env.SLACK_SIGNING_SECRET;
 const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN
@@ -63,20 +63,39 @@ const postChat = async (messages: openAiMessage[]): Promise<string> => {
   return response.data.choices[0].message.content;
 };
 
-const appOptions = {
-  token: slackBotToken,
-  signingSecret: slackSigningSecret,
-  socketMode: false,
-  appToken: slackAppToken,
-  port: 3000
-}
-
+let app;
 if (environment === "development") {
   // 開発環境の場合は socketMode で起動する
-  appOptions["socketMode"] = true;
+  app = new App({
+    token: slackBotToken,
+    signingSecret: slackSigningSecret,
+    socketMode: true,
+    appToken: slackAppToken,
+    port: 3000,
+  });
+} else {
+  // 本番環境は httpMode で起動する
+  const receiver = new ExpressReceiver({ signingSecret: slackSigningSecret || "" });
+  receiver.app.use(express.json());
+  receiver.app.get('/', (_req, res) => {
+    console.log("hello world")
+    res.send('Hello World!');
+  });
+  // Slack appからの疎通確認用
+  receiver.app.post('/slack/events', async (req, res) => {
+    console.log(req)
+    if (req.body.type === 'url_verification') {
+      res.status(200).send(req.body.challenge);
+    } else {
+      res.status(404).end();
+    }
+  });
+  app = new App({
+    token: slackBotToken,
+    appToken: slackAppToken,
+    receiver,
+  });
 }
-
-const app = new App(appOptions);
 
 // "hello" を含むメッセージをリッスンします
 app.message('hello', async ({ message, say }) => {
