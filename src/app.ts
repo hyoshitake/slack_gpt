@@ -30,7 +30,7 @@ interface ChatCompletionResponse {
   }[];
 }
 
-const environment: string | undefined = process.env.NODE_ENV;
+const environment: string | undefined = process.env.SLACK_APP_ENV;
 const slackBotToken: string | undefined = process.env.SLACK_BOT_TOKEN;
 const slackSigningSecret: string | undefined = process.env.SLACK_SIGNING_SECRET;
 const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN
