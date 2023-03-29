@@ -4,11 +4,6 @@ import express from 'express';
 import { config } from 'dotenv';
 config();
 
-// userが型定義されていないと怒られるため、string型のuserを持ったOriginalMessageEventをMessageEventを拡張して再定義する
-type OriginalMessageEvent = MessageEvent & {
-  user: string;
-};
-
 // OpenAIへのリクエストのインターフェース もっと色々設定できるが今回必要なもののみ定義
 interface ChatCompletionRequestBody {
   model: string;
@@ -102,25 +97,51 @@ if (environment === "development") {
   });
 }
 
-// "hello" を含むメッセージをリッスンします
-app.message('hello', async ({ message, say }) => {
-  const originalMessage: OriginalMessageEvent = message as OriginalMessageEvent;
-  // イベントがトリガーされたチャンネルに say() でメッセージを送信します
-  await say(`Hey there <@${originalMessage.user}>!`);
-});
-
 app.event('app_mention', async ({ event, client, say }) => {
   const channelId: string = event.channel;
-  // if (channelId !== askBotChannelId) return;
+  const userId: string | undefined = event.user;
+  const text: string = event.text;
+  const botUserId: string | undefined = process.env.BOT_USER_ID
+
   try {
     /* 応答があったスレッドの内容を取得 */
     const replies = await client.conversations.replies({
       channel: channelId,
       ts: event.thread_ts || event.ts,
     });
+    // ユーザー情報を取得
+    const userInfoResponse = await client.users.info({ user: userId || '' });
+    let userName: string | undefined = '';
+
+    if (userInfoResponse.user) {
+      userName = userInfoResponse.user.real_name || userInfoResponse.user.name;
+    } else {
+      userName = 'Unknown user';
+    }
+
+    // チャンネル情報を取得
+    const channelInfoResponse = await client.conversations.info({ channel: channelId });
+    let channelName: string | undefined = '';
+
+    if (channelInfoResponse.channel) {
+      channelName = channelInfoResponse.channel.name || 'Unknown channel';
+    } else {
+      channelName = 'Unknown channel';
+    }
+
+    // 投稿内容からChatGPTメンションを削除する
+    const cleanedText = text.replace(new RegExp(`<@${botUserId}>`, 'g'), '').trim();
+
     console.log('===replies===========================')
     console.log(replies)
     console.log('===replies===========================')
+    console.log('===User Name============================');
+    console.log(userName);
+    console.log('===Channel Name==========================');
+    console.log(channelName);
+    console.log('===Text===============================');
+    console.log(cleanedText);
+    console.log('=======================================');
 
     if (!replies.messages) {
       await say(
@@ -131,7 +152,6 @@ app.event('app_mention', async ({ event, client, say }) => {
     }
 
     /* スレッドの内容をGTPに送信 */
-    const botUserId: string | undefined = process.env.BOT_USER_ID
     const threadMessages = replies.messages.map((message) => {
       return {
         role: message.user === botUserId ? 'assistant' : 'user',
