@@ -6,8 +6,8 @@ services:
     working_dir: /var/app
     command: npm run watch
     volumes:
-      - slack_gpt-volume:/var/app:delegated
-      # - /Users/moriryotaro/projects/GitHub/slack_gpt:/var/app:delegated
+      # - slack_gpt-volume:/var/app:delegated
+      - /Users/moriryotaro/projects/GitHub/slack_gpt:/var/app:delegated
     ports:
       - 48080:3000
     expose:
@@ -20,7 +20,10 @@ services:
       OPEN_AI_API_KEY: $OPEN_AI_API_KEY
       BOT_USER_ID: $BOT_USER_ID
       SLACK_APP_ENV: $SLACK_APP_ENV
-      PORT: 3000
+      PORT: $PORT
+      SPREAD_SHEET_ID: $SPREAD_SHEET_ID
+      GOOGLE_CLIENT_EMAIL: $GOOGLE_CLIENT_EMAIL
+      GOOGLE_PRIVATE_KEY: $GOOGLE_PRIVATE_KEY
     tty: true
 
 volumes:

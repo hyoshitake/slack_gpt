@@ -1,4 +1,5 @@
-import { App, MessageEvent, ExpressReceiver } from '@slack/bolt'
+import { App, ExpressReceiver } from '@slack/bolt'
+import { appendToSheet } from "./sheets-api";
 import axios from 'axios';
 import express from 'express';
 import { config } from 'dotenv';
@@ -29,11 +30,11 @@ const environment: string | undefined = process.env.SLACK_APP_ENV;
 const port : string | undefined = process.env.PORT
 const slackBotToken: string | undefined = process.env.SLACK_BOT_TOKEN;
 const slackSigningSecret: string | undefined = process.env.SLACK_SIGNING_SECRET;
-const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN
+const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN;
+const openAiApiKey: string | undefined = process.env.OPEN_AI_API_KEY;
 
 const postChat = async (messages: openAiMessage[]): Promise<string> => {
 
-  const openAiApiKey: string | undefined = process.env.OPEN_AI_API_KEY;
   if (!openAiApiKey) {
     throw new Error('OpenAI API key not found');
   }
@@ -101,7 +102,8 @@ app.event('app_mention', async ({ event, client, say }) => {
   const channelId: string = event.channel;
   const userId: string | undefined = event.user;
   const text: string = event.text;
-  const botUserId: string | undefined = process.env.BOT_USER_ID
+  const botUserId: string | undefined = process.env.BOT_USER_ID;
+  const timestamp: string = event.ts;
 
   try {
     /* 応答があったスレッドの内容を取得 */
@@ -109,45 +111,50 @@ app.event('app_mention', async ({ event, client, say }) => {
       channel: channelId,
       ts: event.thread_ts || event.ts,
     });
-    // ユーザー情報を取得
-    const userInfoResponse = await client.users.info({ user: userId || '' });
-    let userName: string | undefined = '';
 
-    if (userInfoResponse.user) {
-      userName = userInfoResponse.user.real_name || userInfoResponse.user.name;
-    } else {
-      userName = 'Unknown user';
-    }
-
-    // チャンネル情報を取得
+    // チャンネル名を取得
     const channelInfoResponse = await client.conversations.info({ channel: channelId });
     let channelName: string | undefined = '';
-
     if (channelInfoResponse.channel) {
       channelName = channelInfoResponse.channel.name || 'Unknown channel';
     } else {
       channelName = 'Unknown channel';
     }
 
+    // ユーザー名を取得
+    const userInfoResponse = await client.users.info({ user: userId || '' });
+    let userName: string | undefined = '';
+    if (userInfoResponse.user) {
+      userName = userInfoResponse.user.real_name || userInfoResponse.user.name;
+    } else {
+      userName = 'Unknown user';
+    }
+
     // 投稿内容からChatGPTメンションを削除する
     const cleanedText = text.replace(new RegExp(`<@${botUserId}>`, 'g'), '').trim();
+
+    // 投稿時間タイムスタンプ（秒単位）をDateオブジェクトに変換
+    const postedDateUTC = new Date(parseInt(timestamp) * 1000);
+    const postedDateJST = new Date(postedDateUTC.getTime() + 9 * 60 * 60 * 1000);
 
     console.log('===replies===========================')
     console.log(replies)
     console.log('===replies===========================')
-    console.log('===User Name============================');
-    console.log(userName);
     console.log('===Channel Name==========================');
     console.log(channelName);
+    console.log('===User Name============================');
+    console.log(userName);
     console.log('===Text===============================');
     console.log(cleanedText);
+    console.log('=======================================');
+    console.log('===Posted Date========================');
+    console.log(postedDateJST);
     console.log('=======================================');
 
     if (!replies.messages) {
       await say(
         '[ERROR]:\nスレッドが見つかりませんでした。\n管理者に連絡してください。',
       );
-
       return;
     }
 
@@ -165,6 +172,12 @@ app.event('app_mention', async ({ event, client, say }) => {
     console.log('===AnswerText===========================')
     console.log(gptAnswerText)
     console.log('===AnswerText===========================')
+
+    /* 投稿内容をスプレッドシートに保存 */
+    const values = [
+      [channelName, userName, cleanedText, gptAnswerText, postedDateJST.toISOString()],
+    ];
+    appendToSheet(values);
 
     /* スレッドに返信 */
     await say({
