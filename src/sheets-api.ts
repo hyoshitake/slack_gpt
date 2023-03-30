@@ -39,7 +39,7 @@ export async function appendToSheet(
 async function getLastRow(spreadsheetId: string) {
   const response = await sheetsApi.spreadsheets.values.get({
     spreadsheetId,
-    range: `シート1!A1:E`,
+    range: `シート1!A1:E1`,
   });
   return response.data.values ? response.data.values.length + 1 : 1;
 }
