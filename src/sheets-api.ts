@@ -11,9 +11,8 @@ const auth = new google.auth.JWT({
 });
 const sheetsApi = google.sheets({ version: "v4", auth });
 
-export async function appendToSheet(
-  values: any[][]
-) {
+// スプレッドシートの最終行に記録を追加する
+export async function appendToSheet(values: any[][]) {
   try {
     // 最終行を取得して挿入する行を決定する
     const lastRow = await getLastRow(spreadsheetId || "");

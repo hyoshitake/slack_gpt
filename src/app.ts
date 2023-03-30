@@ -1,64 +1,15 @@
 import { App, ExpressReceiver } from '@slack/bolt'
 import { appendToSheet } from "./sheets-api";
-import axios from 'axios';
+import { postChat } from "./open-ai-api";
 import express from 'express';
 import { config } from 'dotenv';
 config();
-
-// OpenAIへのリクエストのインターフェース もっと色々設定できるが今回必要なもののみ定義
-interface ChatCompletionRequestBody {
-  model: string;
-  messages: openAiMessage[];
-}
-
-// OpenAIへのリクエストに使用されるmessageの詳細
-interface openAiMessage {
-  role: string;
-  content: string;
-}
-
-// OpenAIのレスポンスのインターフェース 返却されるレスポンス詳細をもっと色々設定できるが今回必要なもののみ定義
-interface ChatCompletionResponse {
-  choices: {
-    message: {
-      content: string;
-    }
-  }[];
-}
 
 const environment: string | undefined = process.env.SLACK_APP_ENV;
 const port : string | undefined = process.env.PORT
 const slackBotToken: string | undefined = process.env.SLACK_BOT_TOKEN;
 const slackSigningSecret: string | undefined = process.env.SLACK_SIGNING_SECRET;
 const slackAppToken: string | undefined = process.env.SLACK_APP_TOKEN;
-const openAiApiKey: string | undefined = process.env.OPEN_AI_API_KEY;
-
-const postChat = async (messages: openAiMessage[]): Promise<string> => {
-
-  if (!openAiApiKey) {
-    throw new Error('OpenAI API key not found');
-  }
-
-  const endpoint = 'https://api.openai.com/v1/chat/completions';
-  const requestBody: ChatCompletionRequestBody = {
-    model: 'gpt-3.5-turbo',
-    messages: messages,
-  };
-
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${openAiApiKey}`
-  };
-
-  const response = await axios.post<ChatCompletionResponse>(endpoint, requestBody, {
-    headers,
-    timeout: 20000
-  });
-
-  if (!response.data) return 'No response from OpenAI API';
-
-  return response.data.choices[0].message.content;
-};
 
 let app;
 if (environment === "development") {
@@ -177,7 +128,7 @@ app.event('app_mention', async ({ event, client, say }) => {
     const values = [
       [channelName, userName, cleanedText, gptAnswerText, postedDateJST.toISOString()],
     ];
-    appendToSheet(values);
+    await appendToSheet(values);
 
     /* スレッドに返信 */
     await say({
