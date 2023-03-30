@@ -1,15 +1,16 @@
-import { google } from "googleapis";
+import { JWT } from "google-auth-library";
+import { sheets_v4 } from "@googleapis/sheets";
 
 const clientEmail: string | undefined = process.env.GOOGLE_CLIENT_EMAIL || "";
 const privateKey: string | undefined = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || "";
 const spreadsheetId: string | undefined = process.env.SPREAD_SHEET_ID;
 
-const auth = new google.auth.JWT({
+const auth = new JWT({
   email: clientEmail,
   key: privateKey,
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
-const sheetsApi = google.sheets({ version: "v4", auth });
+const sheetsApi = new sheets_v4.Sheets({ auth });
 
 // スプレッドシートの最終行に記録を追加する
 export async function appendToSheet(values: any[][]) {
