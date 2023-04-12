@@ -42,7 +42,7 @@ export async function postChat (messages: openAiMessage[]) {
 
   const response = await axios.post<ChatCompletionResponse>(endpoint, requestBody, {
     headers,
-    timeout: 20000
+    timeout: 120000
   });
 
   if (!response.data) return 'No response from OpenAI API';
