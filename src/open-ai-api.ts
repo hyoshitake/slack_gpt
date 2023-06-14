@@ -31,7 +31,7 @@ export async function postChat (messages: openAiMessage[]) {
 
   const endpoint = 'https://api.openai.com/v1/chat/completions';
   const requestBody: ChatCompletionRequestBody = {
-    model: 'gpt-3.5-turbo',
+    model: process.env.OPEN_AI_API_VERSION || '',
     messages: messages,
   };
 
